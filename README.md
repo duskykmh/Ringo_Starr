@@ -5,5 +5,6 @@ This a collaborative project designed by Jacob Brown, Max Dickinson, Kyle Holmbe
 </p>
 
 <em>Click to see Waffleboard</em>
+
 [![Stories in Ready](https://badge.waffle.io/duskykmh/Ringo_Starr.svg?label=ready&title=Ready)](http://waffle.io/duskykmh/Ringo_Starr)
 
