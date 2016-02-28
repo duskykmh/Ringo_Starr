@@ -6,7 +6,7 @@ This a collaborative project designed by Jacob Brown, Max Dickinson, Kyle Holmbe
 
 <p>
 Things required to document in wiki:
-
+<br>
 https://github.com/maniacbug/StandardCplusplus #Standard C++ Library for Arduino (in order to use vectors)
 </p>
 
