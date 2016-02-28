@@ -1088,7 +1088,7 @@ void ModulateIR(unsigned int Frequency, unsigned int OnTime){//Ver. 1.0, Dustin 
   uint8_t prescalerbits;
   if(OnTime>100)
     OnTime=100;
-  if (F_CPU/Frequency/2>=0x10000){
+  if (F_CPU/Frequency/2 >= 0x10000){
     if(F_CPU/Frequency/2>=0x10000*8){
         prescalerbits=0b011;//prescaler 64
         period=F_CPU/Frequency/(2*16);

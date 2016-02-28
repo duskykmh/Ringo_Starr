@@ -1,5 +1,5 @@
+/*
 #include <vector>
-//using namespace std;
 
 int soundSensorPin = A0;
 int LEDPin = 5;
@@ -29,14 +29,16 @@ void loop() {
   delay(200);
   int sensorValue = analogRead(soundSensorPin);
   int Threshold_value = Threshold_value;
-  
+
+  // Testing Lines
   //for (int i = 0; i < 50; i++) {
   // count how many items have been sumed
   //}
   
-  Serial.println(Threshold_Value);
-  Serial.print("sensorValue");
-  Serial.println(sensorValue);
+  //Serial.println(Threshold_Value);
+  //Serial.print("sensorValue");
+  //Serial.println(sensorValue);
+  
   delay(1);
   if (sensorValue > Threshold_value) {
     turnonLED();
@@ -47,16 +49,15 @@ void loop() {
 }
 
 void pins_init() {
-  pinMode(LEDPin,OUTPUT);
-  pinMode(soundSensorPin , INPUT);
+  pinMode(LEDPin, OUTPUT);
+  pinMode(soundSensorPin, INPUT);
 }
 
 void turnonLED() {
-  digitalWrite(LEDPin,HIGH);
+  digitalWrite(LEDPin, HIGH);
 }
 
 void turnoffLED() {
   digitalWrite(LEDPin, LOW);
 }
-
 

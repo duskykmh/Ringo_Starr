@@ -15,7 +15,7 @@ Visit http://www.arduino.cc to learn about the Arduino.
 
 */
 
-#include "Arduino.h"
+#include <Arduino.h>
 
 #ifndef NAVIGATION_H
 #define NAVIGATION_H

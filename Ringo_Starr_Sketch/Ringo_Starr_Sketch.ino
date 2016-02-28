@@ -1,14 +1,18 @@
-/* 
+/*
 Ringo Robot
-Ringo_Base_Sketch_Rev06
-Version 6.1 12/2015
-
-This is a basic sketch that can be used as a starting point
-for various functionality of the Ringo robot.
-
-Significant portions of this code written by
-Dustin Soodak for Plum Geek LLC. Some portions
-contributed by Kevin King.
+Ringo_PreLoaded_Behaviors_Rev05
+Version 5.1 9/2015
+IMPORTANT NOTE:  THIS SKETCH REQUIRES ARDUINO IDE 1.6.5 OR LATER TO COMPILE
+(Previous versions compile this sketch too large to fit into Ringo's processor)
+This sketch showcases several possible Ringo behaviors.
+Use these behaviors as starting points for your own work.
+When reset or turned on, press one of the number keys on your
+IR remote control to activate one of the behaviors. If Ringo
+blinks red, then the key was not recognized. If Ringo blinks
+green, then the key was recognized and a beavior has
+been started.
+This code was written by Plum Geek LLC with most
+significant portions written by Dustin Soodak and Kevin King.
 Portions from other open source projects where noted.
 This code is licensed under:
 Creative Commons Attribution-ShareAlike 2.0 Generic (CC BY-SA 2.0)
@@ -19,22 +23,58 @@ Visit http://www.arduino.cc to learn about the Arduino.
 
 #include "RingoHardware.h"
 #include "Behaviors.h"
+#include <IRLib.h>
 
+#define START_LISTENING 0xa // temporary 4-byte "data"
+#define STOP_DANCING 0xb // temporary 4-byte "data"
 
-//int i;    //declaire any global variables here
+IRsend irSender;
+boolean ringoEnabled = false; // toggle boolean
 
 void setup(){
   HardwareBegin();        //initialize Ringo's brain to work with his circuitry
   PlayStartChirp();       //Play startup chirp and blink eyes
-  SwitchMotorsToSerial(); //Call "SwitchMotorsToSerial()" before using Serial.print functions as motors & serial share a line
   RxIRRestart(4);         //wait for 4 byte IR remote command
   IsIRDone();
   GetIRButton();
   RestartTimer();
+  Serial.begin(9600);
 }
-  
+
+// global variables used by Color Wheel example
+int redIntensity = 0;
+int greenIntensity = 0;
+int blueIntensity = 0;
+int red;
+int green;
+int blue;
+int presentDirection = 0;
+int hue = 0;
+int hueOpposite = 180;
+// end global variables used by Color Wheel example
+    
 void loop(){
-  restart:  //label to cause program to come back to here if "MENU" on remote is pressed in any example
+  /* //Add in when IR protocol is understood
+  if (Serial.read() == 0 && !ringoEnabled){ // if serial monitor reads 0 and Ringo is not enabled, data is sent to tell it to listen
+    for (int i = 0; i < 5; i++) {
+      irSender.send(UNKNOWN, START_LISTENING, 4); // unknown protocol - Ringo receives 4-byte packets
+      delay(40); // slight delay (may be useful - if not, remove)
+  }
+    ringoEnabled = true;
+  }
+  
+
+  if (Serial.read() == 1 && ringoEnabled){ // if serial monitor reads 1 and Ringo is enabled (dancing, listening, or otherwise), data is sent
+                                           // to tell it to stop dancing
+    for (int i = 0; i < 5; i++){
+      irSender.send(UNKNOWN, STOP_DANCING, 4); // unknown protocol - Ringo receives 4-byte packet
+      delay(40); // slight delay (may be useful - if not, remove)
+  }
+    ringoEnabled = false;
+  }
+  */
+  
+  restart:              //label to cause program to come back to here if "MENU" on remote is pressed in any example
   byte button;
 
   if(GetTime()>1000){   //blink rear pixel once a second to indicate Ringo is in "Menu" mode
@@ -43,10 +83,13 @@ void loop(){
       OffPixels();              // turn off all pixels
       RestartTimer();           // zero timer
       } 
+      
+  //Example user code:  
   
   if(IsIRDone()){                   //wait for an IR remote control command to be received
       button = GetIRButton();       // read which button was pressed, store in "button" variable
 
+     
       if(button){                   // if "button" is not zero...
         switch (button){            // activate a behavior based on which button was pressed
 
@@ -85,25 +128,13 @@ void loop(){
          Behavior_DriveSquare();
          break;
 
-         case 8:                    // Button 8, "Maintain Heading" - Rotate Ringo by hand and he'll return to start
-                                    // Press User button and release to re-zero Ringo's heading
-         RxIRRestart(4);            // restart wait for 4 byte IR remote command
-         Behavior_MaintainHeading();
-         break;
-
-         case 9:                    // Button 9, "Follow Line" - Ringo follows 1/2" (1cm) wide black line on white posterboard
+         case 8:                    // Button 9, "Follow Line" - Ringo follows 1/2" (1cm) wide black line on white posterboard
          RxIRRestart(4);            // restart wait for 4 byte IR remote command
          Behavior_FollowLine();
-         break;
-
-         case 10:
-         RxIRRestart(4);            // Button 0, "Explore Example" - Autonymous explore. Ringo avoids barriers and edges/lines on surface
-         ExploreExample(160,60,500);//explore at speed 150 for 60 seconds and pause for 500ms afterwards for it to come to a halt
          break;
          
          default:                   // if no match, break out and wait for a new code
          PlayNonAck();              // quick "NonAck" chirp to know a known button was received, but not understood as a valid command
-         RxIRRestart(4);            //wait for 4 byte IR remote command
          SwitchMotorsToSerial();
          Serial.print("button: ");Serial.println(button);  // send button number pressed to serial window
       
@@ -112,7 +143,3 @@ void loop(){
       }
     }//end if(IsIRDone())
 }
-
-
-
-
