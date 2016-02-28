@@ -1,5 +1,4 @@
 /* 
-
 Ringo Robot
 Ringo_Base_Sketch_Rev06
 Version 6.1 12/2015
@@ -16,7 +15,6 @@ Creative Commons Attribution-ShareAlike 2.0 Generic (CC BY-SA 2.0)
 https://creativecommons.org/licenses/by-sa/2.0/
 Visit http://www.plumgeek.com for Ringo information.
 Visit http://www.arduino.cc to learn about the Arduino.
-
 */
 
 #include "RingoHardware.h"

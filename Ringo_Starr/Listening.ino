@@ -1,5 +1,5 @@
 #include <vector>
-using namespace std;
+//using namespace std;
 
 int soundSensorPin = A0;
 int LEDPin = 5;
@@ -14,7 +14,7 @@ void setup() {
 
 int setThreshold() {
   int cumulate = 0;
-  int n =0;
+  int n = 0;
   for (int i =0; i < 1000; i++) {
     int sensorValue = analogRead(soundSensorPin);
     cumulate += sensorValue; // count the sum
