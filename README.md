@@ -4,6 +4,16 @@ Music-activated, dancing robot program
 This a collaborative project designed by Jacob Brown, Max Dickinson, Kyle Holmberg, and Kristen Splonkowski for CIS330, C/C++
 </p>
 
+<u>System requires:</u>
+<li>
+  <ul>Plumgeek Ringo Robot</ul>
+  <ul>Arduino Uno Board</ul>
+  <ul>Breadboard</ul>
+  <ul>IR Transmitter Module</ul>
+  <ul>Microphone Module</ul>
+  <ul>Appropriate wiring</ul>
+</li>
+
 <p>
 Things required to document in wiki:
 <br>
