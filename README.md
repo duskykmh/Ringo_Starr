@@ -5,14 +5,12 @@ This a collaborative project designed by Jacob Brown, Max Dickinson, Kyle Holmbe
 </p>
 
 <u>System requires:</u>
-<li>
-  <ul>Plumgeek Ringo Robot</ul>
-  <ul>Arduino Uno Board</ul>
-  <ul>Breadboard</ul>
-  <ul>IR Transmitter Module</ul>
-  <ul>Microphone Module</ul>
-  <ul>Appropriate wiring</ul>
-</li>
+<li>Plumgeek Ringo Robot</li>
+<li>Arduino Uno Board</li>
+<li>Breadboard</li>
+<li>IR Transmitter Module</li>
+<li>Microphone Module</li>
+<li>Appropriate wiring</li>
 
 <p>
 Things required to document in wiki:
