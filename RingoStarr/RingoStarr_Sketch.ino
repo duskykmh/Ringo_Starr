@@ -44,12 +44,3 @@ void loop(){
   StopDancing();
   current = 0x0;
 }
-
-
-
-
-
-
-
-
-
