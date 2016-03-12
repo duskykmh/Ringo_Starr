@@ -19,8 +19,6 @@ http://www.plumgeek.com/ #Robot manufacturer
 <br>
 https://github.com/plumgeek/PlumGeek-Ringo-Robot #PlumGeek Ringo Arduino Files
 <br>
-https://github.com/maniacbug/StandardCplusplus #Standard C++ Library for Arduino (in order to use vectors)
-<br>
 https://github.com/cyborg5/IRLib #Infrared Library for IR Receival and Transmittal
 </p>
 
