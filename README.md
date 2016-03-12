@@ -1,7 +1,7 @@
 # Ringo_Starr
 Music-activated, dancing robot program
 <p>
-This a collaborative project designed by Jacob Brown, Max Dickinson, Kyle Holmberg, and Kristen Splonkowski for CIS330, Operating Systems
+This a collaborative project designed by Jacob Brown, Max Dickinson, Kyle Holmberg, and Kristen Splonkowski for CIS330, C/C++
 </p>
 
 <p>
@@ -14,4 +14,3 @@ https://github.com/cyborg5/IRLib #Infrared Library for IR Receival and Transmitt
 
 <em><b>Click to see Waffleboard:</b></em>
 [![Stories in Ready](https://badge.waffle.io/duskykmh/Ringo_Starr.svg?label=ready&title=Ready)](http://waffle.io/duskykmh/Ringo_Starr)
-
