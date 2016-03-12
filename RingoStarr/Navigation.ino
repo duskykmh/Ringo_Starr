@@ -697,16 +697,16 @@ void NavigationBegin(void){ //Ver. 1.0, Dustin Soodak
   
   GyroSetFrequency(380);
   GyroSetRange(2000);
-
-  delay(200);                         // let nav sensors buffer fill some before calibrating
-  CalibrateNavigationSensors();
+  
   ZeroNavigation();
+  
+  CalibrateNavigationSensors();
   
   pinMode(Accel_Interrupt, INPUT_PULLUP);
   
   NavigationOn=1;
   PauseNavigationInterrupt=0;  
-  
+  //
 }//end void NavigationBegin(void)
 
 
@@ -921,10 +921,10 @@ void GyroGetAxes(int *Axes){//Ver. 1.0, Dustin Soodak
 }
 
 //gyro:
-//range  calc dps/dig  "typ" in datasheet  to get to "typ"   
-//250 0.007629395 0.00875             1.14687993         
-//500 0.015258789 0.0175            1.146880005
-//2000  0.061035156 0.070             1.146880005
+//range	calc dps/dig	"typ" in datasheet	to get to "typ"		
+//250	0.007629395	0.00875           	1.14687993         
+//500	0.015258789	0.0175           	1.146880005
+//2000	0.061035156	0.070            	1.146880005
 
 void UpdateGyroConversionVars(void){//Ver. 1.0, Dustin Soodak
   GyroRawToDegreesPerSecMult=((float)GyroRange)*0.0000355/GyroscopeCalibrationMultiplier;// 1/2^15=1/32768=0.000030517578125      // 1/2^15*1.14688=exactly .000035
@@ -1120,3 +1120,13 @@ int VectorToDegrees(int x,int y){//Ver. 1.0, Dustin Soodak
 // ***************************************************
 // end Computation
 // ***************************************************
+
+
+
+
+
+
+
+
+
+

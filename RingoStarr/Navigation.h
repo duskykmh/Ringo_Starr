@@ -15,7 +15,7 @@ Visit http://www.arduino.cc to learn about the Arduino.
 
 */
 
-#include <Arduino.h>
+#include "Arduino.h"
 
 #ifndef NAVIGATION_H
 #define NAVIGATION_H
@@ -114,7 +114,7 @@ extern int VectorToDegrees(int x,int y);
 // Accel
 // ***************************************************
 
-//Accelerometer read/write registers functions on code by Jim Lindblom
+//Accelerometer code based on code by Jim Lindblom
 //https://github.com/sparkfun/MMA8452_Accelerometer/tree/master/Firmware
 
 extern int AccelZeroes[3];
@@ -144,9 +144,7 @@ extern void AccelGetAxes(int *Axes);//Axis=0,1,2  [int is 16 bit in adruino]
 // ***************************************************
 // Gyro
 // ***************************************************
-//Gyroscope read/write register functions badsed on
-//"L3G4200D 3-axis gyro example code" by Jim Lindblom at 
-//https://www.sparkfun.com/products/10612
+
 extern int GyroZeroes[3];
 extern int32_t GyroPosition[3];//running total
 extern int GyroVelocity[3];//raw values go here

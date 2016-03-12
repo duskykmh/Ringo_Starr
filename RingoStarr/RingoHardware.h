@@ -1,6 +1,6 @@
 /*
 
-Ringo Robot:  RingoHardware  Rev05.01  09/2015
+Ringo Robot:  RingoHardware.h  Rev01.01  08/2015
 
 This code was written by Plum Geek LLC primarily 
 by Dustin Soodak with some editing and additional 
@@ -147,11 +147,6 @@ extern void Motors(int LeftMotorSpeed, int RightMotorSpeed);//-255 to 255: negat
 //is entered, then it will be called when an edge is detected.
 //
 
-#define MIN_MOTOR_SPEED 50
-#define MAINTAIN_HEADING_MAX_INTEGRAL_TERM 20
-extern void MaintainHeadingReset();
-extern char MaintainHeading(int Heading, int Speed, int Wiggle);
-
 extern int HeadingWithShortestDistance(int Heading);
 //Figures out which of 2 directions (left or right) to turn (in order to get 
 //from current direction to Heading.
@@ -174,10 +169,8 @@ extern void MoveXYWithOptions(int X, int Y, int Speed, int MaxExpectedRunTime, i
 
 void MoveWithOptions(int Heading, int Distance, int Speed, int MaxExpectedRunTime, int MaxExpectedSkidTime, void (*EdgeFunction)(char), char Wiggle);
 //  Translates Heading & Distance to X,Y and calls MoveXYWithOptions()
-//  Ex: MoveWithOptions(0, 100, 150, 2000, 500,0,0);//heading: 0 degrees, for 100mm at speed 150 for maximum of 2 seconds with 500ms timeout for coming to a halt. 
-//      No response to edge and no wiggle (so goes in straight line)
 
-extern void DriveArc(int TurnDegrees, int left, int right, int MaxExpectedTurnTime, int MaxExpectedSkidTime);
+extern void RotateSimple(int TurnDegrees, int left, int right, int MaxExpectedTurnTime, int MaxExpectedSkidTime);
 //  ex: RotateSimple(GetDegrees()+90, 150, 0, 1000, 250);//approximate rotation
 //    Set left motor to 150 and right motor to 0. Stop both motors when the 
 //    heading we expect to be at after skidding to a halt is 90 degrees to the
@@ -201,19 +194,17 @@ extern char RotateAccurate(int Heading, int MaxExpectedTurnTime);
 // IR
 // ***************************************************
 
-
-//The following was used as reference code in the development of the IR receive functions:
+// Infrared transmit and recieve functions are based on:
 //http://playground.arduino.cc/Code/InfraredReceivers by Paul Malmsten 
 //https://github.com/z3t0/Arduino-IRremote by Ken Shirriff
+
 extern void TxIR(unsigned char *Data, int Length);
-extern void TxIRKey(byte key);
 //
 extern void RxIRStop(void);
 extern void RxIRRestart(char BytesToLookFor);
 extern char IsIRDone(void);
 extern byte GetIRButton(void);
 extern char IRNumOfBytes;
-extern char CheckMenuButton(void);
 //
 extern byte GetIRButton(void);
 extern const uint8_t IRRemoteButtons[][2];
@@ -244,13 +235,11 @@ extern const uint8_t IRRemoteButtons[][2];
 //Low level functions:
 extern int IRTransitionCount;
 extern unsigned char IRBytes[20];
-extern byte irData[]={0x00,0xFF,0x00,0x00};
 extern char IRActive;
 extern volatile char IRReceiving;//note: IRReceiving turned off if IsIRDone() in regular or auto NavigationHandler() and causes ReadSideSensors() to repeat
 //
-extern void EnableIROutputs(char Level);  //enables or disables the 3 IR outputs. Pass 0 to disable, 1 to enable all 3 IR outputs.
-extern void ModulateIR(unsigned int Frequency, unsigned int OnTime); //ModulateIR(38000,5) seems to produce best square wave for 38kHz.
-extern void PlayChirpIR(unsigned int Frequency, unsigned int OnTime); //wrapper for IRCarrierWave, bkwd compatibility. use ModulateIR() instead of PlayChirpIR going forward
+extern void ModulateIR(unsigned int Frequency, unsigned int OnTime); //ModulateIR(38000,6) seems to produce best square wave for 38kHz.
+extern void PlayChirpIR(unsigned int Frequency, unsigned int OnTime); //wrapper for ModulateIR, bkwd compatibility. use ModulateIR() instead of PlayChirpIR going forward
 //
 extern void IRHandler(void);
 //
@@ -263,129 +252,71 @@ extern void IRHandler(void);
 // ***************************************************
 //
 #define LIGHT_SENSOR_STABLIZATION_TIME 200  //us
-//
-#define SIDE_SENSOR_AVER_RISE_TIME 1000000 //us
-#define SIDE_SENSOR_AVER_FALL_TIME  100000 //us
 extern void ReadSideSensors(void);//single relative & ambient reading from each of the 3 side sensors (pauses and/or repeats if IRReceiving)
 extern int RightLightLevel,LeftLightLevel,RearLightLevel;
-extern int RightLightLevelPrev,LeftLightLevelPrev,RearLightLevelPrev;
-extern float RightLightLevelAverage,LeftLightLevelAverage,RearLightLevelAverage;
 extern int RearAmbientLightLevel,RightAmbientLightLevel,LeftAmbientLightLevel;
 //
-extern void ReadEdgeLightSensors(char Averages);//averages several reads and outputs to LeftEdgeSensorValue, etc.
+extern void ReadEdgeLightSensors(char Averages);//averages 8 reads
+extern int RightEdgeLightLevel,LeftEdgeLightLevel,RearEdgeLightLevel;
 //
 extern void ResetLookAtEdge(void);//reset edge runnning average
 extern void LookAtEdge(void);//take readings and add to running average (first call ResetLookAtEdge() once)
 extern int LeftEdgeSensorAverage,RightEdgeSensorAverage,RearEdgeSensorAverage;
 extern int LeftEdgeSensorValue,RightEdgeSensorValue,RearEdgeSensorValue;
+
 //
 //
 //Stuff used in LookForEdge():
 //
-//Unfortunately, surfaces can vary in reflectivity from 20 to 800 counts, and some (such as concrete) may vary up to
-//a couple hundred counts even when it is smooth. Th
-//
-//Zeroes: 
-//Set all these to 0, then look at average values of sensors from calling LookAtEdge() when unit is 
-//nowhere near the surface. Then set them to these average values.
-#define LEFT_ZERO 0   //usually close enough to zero that it makes no difference
-#define RIGHT_ZERO 0  //usually close enough to zero that it makes no difference
-#define REAR_ZERO 20  //usually around 30-40
-//
-//This feature can eliminate false edge detection triggering for surfaces with uneven reflectivity, though it might be easier
-//to do initial testing of LookForEdge() if commented out.
-#define CHECK_EDGE_TWICE //default: un-commented
-//
-//Un-comment exactly one of the following(time adjusted version is default):
-//#define RUNNING_AVERAGE //8 value running average stored in memory
-#define TIME_ADJUSTED_AVERAGE //approximates a running average over a period of LookAtEdgeStabilizationTime
-//
-#define STABILIZATION_TIME_DEFAULT 200.  //in ms (used if TIMER_ADJUSTED_AVERAGE is defined).
-                                         //Can't make this too short or won't detect an edge.
-                                         //Don't make too long or it will be triggered by gradual variations in the
-                                         //surface the robot is exploring.
-                                         //Technical notes:
-                                         //Be aware that if it is called once every 2ms then the averages will only
-                                         //change by 1/100 of the difference between the old and new values so we
-                                         //only get 1% of the resolution if using ints.
-                                         //This version uses "AverageTimes32" units to increase it (for this example)
-                                         //to about 30%.
+//Comment out if you want to disable the "check-twice" feature
+//#define CHECK_EDGE_TWICE
 //
 //Normally, we compare readings to a running average to account for surfaces that have uneven reflectivity.
 //These constants set absolute limits before deciding a reading is too light or dark.
 //The dark value for the rear sensor is different since some light always reflects off of the coaster.
-//Comment out either of these to disable them.
-#define DARK_MIN 5  //default of 5 is mostly disabled
-#define LIGHT_MAX 1000 //default of 1000 is mostly disabled
-//
-//
-//Especially important for not getting false positives for surfaces that don't reflect very much (since random
-//jumping of reading up and down will probably be bigger than the approximately 20% change we are usually looking for.
-#define MAX_EDGE_SENSOR_NOISE 10  //default: 10.  usually in 5 to 15 range
+//Define DARK_MIN and DARK_MIN_REAR to be 0 and LIGHT_MAX to be 2000 if you want to disable this feature.
+#define DARK_MIN 15
+#define DARK_MIN_REAR 40
+#define LIGHT_MAX 1000
 //
 //These functions & constants check for CHANGE in reading, and are proportional to the value of the average.
-//Make the dark constants 0 and the light constants 2000 in order to disable this feature (do not comment them out).
+//Make the dark constants 0 and the light constants 10 in order to disable this feature.
 //*Functions for fast multiplication by floating point number:
 #define MultiplyBy7over8(val) ((val)-((val)>>3)) //"val-(val>>3)"  -> "val*7/8" (.75)
 #define MultiplyBy6over8(val) ((val)-((val)>>2)) //"val-(val>>2)"  -> "val*6/8" (.875)
 #define MultiplyBy9over8(val) ((val)+((val)>>3)) //"val+(val>>3)"  -> "val*9/8" (1.125 or 1 1/8)
 #define MultiplyBy10over8(val) ((val)+((val)>>2)) //"val+(val>>2)"  -> "val*10/8" (1.25 or 1 2/8)
-//*Constants for regular floating point multiplication(easy to read and adjust):
-#define DARK_EDGE_MULT_1 .50//.85 default
-#define DARK_EDGE_MULT_2 .50//.85 default
-#define LIGHT_EDGE_MULT_1 2.00//1.15 default
-#define LIGHT_EDGE_MULT_2 2.00//1.15 default
+//*Constants for regular floating point multiplication:
+#define DARK_EDGE_MULT_1 .8//.875
+#define DARK_EDGE_MULT_2 .8//.75
+#define LIGHT_EDGE_MULT_1 1.25//1.125
+#define LIGHT_EDGE_MULT_2 1.25//1.25
 //Un-comment one of either "Fast" or "Easy to read and adjust" sections below:
-////If CHECK_EDGE_TWICE is not defined, then DarkEdgeMult2 and LightEdgeMult2 are not used
-////Fast: 
-/*#define DarkEdgeMult1(val) (MultiplyBy9over8(val)-MAX_EDGE_SENSOR_NOISE)
-#define DarkEdgeMult2(val) (MultiplyBy10over8(val)-MAX_EDGE_SENSOR_NOISE)
-#define LightEdgeMult1(val) (MultiplyBy7over8(val)+MAX_EDGE_SENSOR_NOISE)
-#define LightEdgeMult2(val) (MultiplyBy6over8(val)+MAX_EDGE_SENSOR_NOISE) */
-////Easy to understand and adjust: (use this version by default)
-#define DarkEdgeMult1(val) ((((float)(val))*DARK_EDGE_MULT_1)-MAX_EDGE_SENSOR_NOISE)
-#define DarkEdgeMult2(val) ((((float)(val))*DARK_EDGE_MULT_2)-MAX_EDGE_SENSOR_NOISE)
-#define BrightEdgeMult1(val) ((((float)(val))*LIGHT_EDGE_MULT_1)+MAX_EDGE_SENSOR_NOISE)
-#define BrightEdgeMult2(val) ((((float)(val))*LIGHT_EDGE_MULT_2)+MAX_EDGE_SENSOR_NOISE)
+////If CHECK_EDGE_TWICE is not defined, then DarkEdgeMult2 and LightEdgeMult2 are not defined
+//*Fast
+/*#define DarkEdgeMult1(val) MultiplyBy9over8(val)
+#define DarkEdgeMult2(val) MultiplyBy10over8(val)
+#define LightEdgeMult1(val) MultiplyBy7over8(val)
+#define LightEdgeMult2(val) MultiplyBy6over8(val) */
+//*Easy to read and adjust
+#define DarkEdgeMult1(val) (((float)(val))*DARK_EDGE_MULT_1)
+#define DarkEdgeMult2(val) (((float)(val))*DARK_EDGE_MULT_2)
+#define LightEdgeMult1(val) (((float)(val))*LIGHT_EDGE_MULT_1)
+#define LightEdgeMult2(val) (((float)(val))*LIGHT_EDGE_MULT_2)
 //
-extern char IsOverEdge(void);
 extern char LookForEdge(void);
-//
 #define RIGHT_DARK 0x01
 #define RIGHT_BRIGHT 0x02
 #define REAR_DARK 0x04
 #define REAR_BRIGHT 0x08
 #define LEFT_DARK 0x10
 #define LEFT_BRIGHT 0x20
-#define EXTRA_DARK 0x40
 #define FrontEdgeDetected(edge) ((edge)&(RIGHT_DARK | RIGHT_BRIGHT | LEFT_DARK | LEFT_BRIGHT))
-#define RightFrontEdgeDetected(edge) ((edge)&(RIGHT_DARK | RIGHT_BRIGHT))
-#define LeftFrontEdgeDetected(edge) ((edge)&(LEFT_DARK | LEFT_BRIGHT))
 #define BackEdgeDetected(edge) ((edge)&(REAR_DARK | REAR_BRIGHT))
 #define BrightDetected(edge) ((edge)&(RIGHT_BRIGHT | REAR_BRIGHT | LEFT_BRIGHT))
-#define FrontDarkDetected(edge) ((edge)&(RIGHT_DARK | LEFT_DARK))
+#define DarkDetected(edge) ((edge)&(RIGHT_DARK | REAR_DARK | LEFT_DARK))
 #define RightDetected(edge) ((edge)&(RIGHT_BRIGHT | RIGHT_DARK))
 #define LeftDetected(edge) ((edge)&(LEFT_BRIGHT | LEFT_DARK))
-//
-#define LeftDarkDetected(edge) ((edge)&LEFT_DARK)
-#define LeftBrightDetected(edge) ((edge)&LEFT_BRIGHT)
-#define RearDarkDetected(edge) ((edge)&REAR_DARK)
-#define RearBrightDetected(edge) ((edge)&REAR_BRIGHT)
-#define RightDarkDetected(edge) ((edge)&RIGHT_DARK)
-#define RightBrightDetected(edge) ((edge)&RIGHT_BRIGHT)
-//
-extern float LookAtEdgeTimeBetweenReadings;
-#ifdef RUNNING_AVERAGE
-#define LeftEdgeSensorValuePrev() (LeftEdgeArray[(EdgeArrayPos+7)&7]) //((EdgeArrayPos+7) mod 8) gives previous EdgeArrayPos
-#define RearEdgeSensorValuePrev() (RearEdgeArray[(EdgeArrayPos+7)&7]) //((EdgeArrayPos+7) mod 8) gives previous EdgeArrayPos
-#define RightEdgeSensorValuePrev() (RightEdgeArray[(EdgeArrayPos+7)&7]) //((EdgeArrayPos+7) mod 8) gives previous EdgeArrayPos
-#endif
-#ifdef TIME_ADJUSTED_AVERAGE
-#define LeftEdgeSensorValuePrev() (LeftEdgeSensorValuePrevious)
-#define RearEdgeSensorValuePrev() (RearEdgeSensorValuePrevious)
-#define RightEdgeSensorValuePrev() (RightEdgeSensorValuePrevious)
-#endif
-//
 // LookForEdge() calls LookAtEdge(), and uses running average to detect dark tape/edges or white tape.
 // dark edges are sensed as the edge sensor moves off the edge of a surface, as the surface is
 // no longer present to reflect light to the sensor. dark edges are also sensed when driving
@@ -416,16 +347,9 @@ extern float LookAtEdgeTimeBetweenReadings;
 //Low level:
 //
 //For LookAtEdge()
-#ifdef RUNNING_AVERAGE
 extern int LeftEdgeArray[8];
-extern int RearEdgeArray[8];
 extern int RightEdgeArray[8];
 extern char EdgeArrayPos;
-#endif
-#ifdef TIME_ADJUSTED_AVERAGE
-extern float LookAtEdgeStabilizationTime;
-extern int LeftEdgeSensorValuePrevious,RightEdgeSensorValuePrevious,RearEdgeSensorValuePrevious;
-#endif
 //
 extern void EdgeLightsOn(void);
 extern void EdgeLightsOff(void);
@@ -436,11 +360,6 @@ extern void SwitchEdgeToAmbient(void);
 extern int ReadLeftLightSensor(void);
 extern int ReadRightLightSensor(void);
 extern int ReadBackLightSensor(void);
-//
-//Legacy:
-#define LeftEdgeLightLevel LeftEdgeSensorValue
-#define RearEdgeLightLevel RearEdgeSensorValue
-#define RightEdgeLightLevel RightEdgeSensorValue
 //
 //
 // ***************************************************
@@ -483,16 +402,16 @@ template <class T> int EEPROM_readAnything(int ee, T& value)
 // ***************************************************
 // Recorded Data
 // ***************************************************
-  //Ver. 1.1, Dustin Soodak
+  //Ver. 1.0, Dustin Soodak
   //
   //Edit this section for each use:
-  typedef struct RecordedDataStruct{int left; int leftaver; int leftamb;  uint32_t t;};//can edit number, names, and data types
+  typedef struct RecordedDataStruct{uint32_t ms; int degr;};//can edit number, names, and data types
   #define RECORDED_DATA_ARRAY_LENGTH 1 //set to 1 if not using
-  #define RecordedDataPrintRow() do{Serial.print(RecordedDataRow.left,DEC);Serial.print("\t");Serial.print(RecordedDataRow.leftaver,DEC);Serial.print("\t");Serial.print(RecordedDataRow.leftamb,DEC);Serial.print("\t");Serial.print(RecordedDataRow.t,DEC);}while(0)
- //
+  #define RecordedDataPrintRow() do{Serial.print(Data.ms,DEC);Serial.print("\t");Serial.print(Data.degr,DEC);}while(0)
+  //
   
-   //Don't need to edit this section:
-  extern RecordedDataStruct RecordedDataRow;
+  //Don't need to edit this section:
+  extern RecordedDataStruct Data;
   extern RecordedDataStruct RecordedDataArray[RECORDED_DATA_ARRAY_LENGTH];
   extern unsigned char RecordedDataLength;
   extern unsigned char RecordedDataPosition;
@@ -505,7 +424,7 @@ template <class T> int EEPROM_readAnything(int ee, T& value)
     RecordedDataPosition=0;RecordedDataLength=0;RecordedDataMinDelay=uSDelay;RecordedDataStart=micros();RecordedDataPrev=RecordedDataStart-RecordedDataMinDelay;}while(0)
    #define RecordedDataRefresh() \ 
     do{if(RecordedDataMinDelay==0 || micros()-RecordedDataPrev>=RecordedDataMinDelay){  \
-           RecordedDataArray[RecordedDataPosition]=RecordedDataRow;  \
+           RecordedDataArray[RecordedDataPosition]=Data;  \
            if(RecordedDataPosition<RECORDED_DATA_ARRAY_LENGTH-1) {RecordedDataPosition++;} else {RecordedDataPosition=0;} \
            if(RecordedDataLength<RECORDED_DATA_ARRAY_LENGTH){RecordedDataLength++;}  \
            RecordedDataPrev+=RecordedDataMinDelay;}  \
@@ -514,7 +433,7 @@ template <class T> int EEPROM_readAnything(int ee, T& value)
   #define RecordedDataFull() (RecordedDataLength==RECORDED_DATA_ARRAY_LENGTH)
   #define RecordedDataTime() (micros()-RecordedDataStart)
   #define RecordedDataPrint() do{for(RecordedDataN=0;RecordedDataN<RecordedDataLength;RecordedDataN++){  \
-    RecordedDataRow=RecordedDataArray[(RecordedDataN+(RecordedDataFull()?RecordedDataPosition:0))%RECORDED_DATA_ARRAY_LENGTH];RecordedDataPrintRow();Serial.println(); \
+    Data=RecordedDataArray[(RecordedDataPosition+RecordedDataN)%RECORDED_DATA_ARRAY_LENGTH];RecordedDataPrintRow();Serial.println(); \
     }}while(0)
   //
   
@@ -522,12 +441,12 @@ template <class T> int EEPROM_readAnything(int ee, T& value)
   ////Edited header file code:
   //typedef struct RecordedDataStruct{int t; int x;};
   //#define RECORDED_DATA_ARRAY_LENGTH 10
-  //#define RecordedDataPrintRow() do{Serial.print(RecordedDataRow.t);Serial.print("_");Serial.print(RecordedDataRow.x);}while(0)
+  //#define RecordedDataPrintRow() do{Serial.print(Data.t);Serial.print("_");Serial.print(Data.x);}while(0)
   ////In setup() or loop():
   //  Serial.println("manual delay:");
   //  RecordedDataReset(0);i=0;
   //  while(!RecordedDataFull()){
-  //    RecordedDataRow.t=RecordedDataTime();RecordedDataRow.x=i;i++;//set fields of Data
+  //    Data.t=RecordedDataTime();Data.x=i;i++;//set fields of Data
   //    RecordedDataRefresh();//add Data to data array
   //    delay(1);//pause 1ms
   //  }
@@ -535,7 +454,7 @@ template <class T> int EEPROM_readAnything(int ee, T& value)
   //  Serial.println("automatic delay:");
   //  RecordedDataReset(1000);i=0;
   //  while(!RecordedDataFull()){
-  //    RecordedDataRow.t=RecordedDataTime();RecordedDataRow.x=i;i++;//set fields of Data
+  //    Data.t=RecordedDataTime();Data.x=i;i++;//set fields of Data
   //    RecordedDataRefresh();//add Data to data array
   //  }
   //  RecordedDataPrint();

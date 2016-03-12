@@ -1,6 +1,6 @@
 /*
 
-Ringo Robot:  RingoHardware  Rev05.01  09/2015
+Ringo Robot:  RingoHardware  Rev01.01  08/2015
 
 This code was written by Plum Geek LLC primarily 
 by Dustin Soodak with some editing and additional 
@@ -163,118 +163,88 @@ int ReadRearLightSensor(void){//Ver. 1.0, Dustin Soodak
   return analogRead(LightSense_Rear);
 }
 
-extern int LeftEdgeSensorValue,RightEdgeSensorValue,RearEdgeSensorValue;//defined below
-extern uint32_t LookAtEdgePrevTimeUs;//defined below
-void ReadEdgeLightSensors(char Averages){//Ver. 1.2, Dustin Soodak
-int i;
-  int templeft,tempright,temprear;
-  uint32_t us;  
-  us=micros();
-  if(us-LookAtEdgePrevTimeUs<LIGHT_SENSOR_STABLIZATION_TIME){
-    delayMicroseconds(LIGHT_SENSOR_STABLIZATION_TIME-(us-LookAtEdgePrevTimeUs));
-  }
-  SwitchAmbientToEdge();  
-  LeftEdgeSensorValue=0;
-  RightEdgeSensorValue=0;
-  RearEdgeSensorValue=0;
+
+int RightLightLevel,LeftLightLevel,RearLightLevel,RightEdgeLightLevel,LeftEdgeLightLevel,RearEdgeLightLevel;
+int RearAmbientLightLevel,RightAmbientLightLevel,LeftAmbientLightLevel;
+
+void ReadEdgeLightSensors(char Averages){//Ver. 1.0, Dustin Soodak
+  int i;
+  int templeft,tempright,temprear;  
+  SwitchAmbientToEdge();
+  EdgeLightsOff(); 
+  LeftEdgeLightLevel=0;
+  RightEdgeLightLevel=0;
+  RearEdgeLightLevel=0;
   for(i=0;i<Averages;i++){
     templeft=ReadLeftLightSensor();
     tempright=ReadRightLightSensor();
     temprear=ReadRearLightSensor();    
     EdgeLightsOn();
     delayMicroseconds(LIGHT_SENSOR_STABLIZATION_TIME);
-    LeftEdgeSensorValue+=ReadLeftLightSensor()-templeft-LEFT_ZERO;
-    RightEdgeSensorValue+=ReadRightLightSensor()-tempright-RIGHT_ZERO;
-    RearEdgeSensorValue+=ReadRearLightSensor()-temprear-REAR_ZERO;
-    EdgeLightsOff();  
+    LeftEdgeLightLevel+=ReadLeftLightSensor()-templeft;
+    RightEdgeLightLevel+=ReadRightLightSensor()-tempright;
+    RearEdgeLightLevel+=ReadRearLightSensor()-temprear;
+    EdgeLightsOff(); 
+    delayMicroseconds(LIGHT_SENSOR_STABLIZATION_TIME);   
   }
-  LookAtEdgePrevTimeUs=micros();
-  if(LeftEdgeSensorValue<0) LeftEdgeSensorValue=0; else LeftEdgeSensorValue/=Averages;
-  if(RightEdgeSensorValue<0) RightEdgeSensorValue=0; else RightEdgeSensorValue/=Averages;
-  if(RearEdgeSensorValue<0) RearEdgeSensorValue=0; else RearEdgeSensorValue/=Averages;
+  if(LeftEdgeLightLevel<0) LeftEdgeLightLevel=0; else LeftEdgeLightLevel/=Averages;
+  if(RightEdgeLightLevel<0) RightEdgeLightLevel=0; else RightEdgeLightLevel/=Averages;
+  if(RearEdgeLightLevel<0) RearEdgeLightLevel=0; else RearEdgeLightLevel/=Averages;
 }
 
-#ifdef RUNNING_AVERAGE
 int LeftEdgeArray[8];
 int RightEdgeArray[8];
 int RearEdgeArray[8];
 char EdgeArrayPos=0;
-int LeftEdgeSensorAverageTimes8=0,RightEdgeSensorAverageTimes8=0,RearEdgeSensorAverageTimes8=0;
-#endif
-#ifdef TIME_ADJUSTED_AVERAGE
-float LookAtEdgeStabilizationTime=STABILIZATION_TIME_DEFAULT;
-int LeftEdgeSensorValuePrevious,RightEdgeSensorValuePrevious,RearEdgeSensorValuePrevious;
-int LeftEdgeSensorAverageTimes32=0,RightEdgeSensorAverageTimes32=0,RearEdgeSensorAverageTimes32=0;
-#endif
-
 int LeftEdgeSensorAverage=0,RightEdgeSensorAverage=0,RearEdgeSensorAverage=0;
-int LeftEdgeSensorValue=0,RightEdgeSensorValue=0,RearEdgeSensorValue=0;
-uint32_t LookAtEdgePrevTimeUs=0;//so LookAtEdge() can be paused until sensors have stabilized from previous time
-float LookAtEdgeTimeBetweenReadings=1.0;//can be used to check how long since the last time LookAtEdge() was called.
-void ResetLookAtEdge(void){//Ver. 1.1, Dustin Soodak
+int LeftEdgeSensorAverageTimes8=0,RightEdgeSensorAverageTimes8=0,RearEdgeSensorAverageTimes8=0;
+int LeftEdgeSensorValue=0,RightEdgeSensorValue=0,RearEdgeSensorValue;
+uint32_t LookAtEdgePrevTimeUs;//so LookAtEdge() can be paused until sensors have stabilized from previous time
+void ResetLookAtEdge(void){//Ver. 1.0, Dustin Soodak
   char i;
-  #ifdef RUNNING_AVERAGE
   for(i=0;i<8;i++){
     LeftEdgeArray[i]=0;
     RightEdgeArray[i]=0;
     RearEdgeArray[i]=0;
   }
-  EdgeArrayPos=0;  
-  LeftEdgeSensorAverageTimes8=0;  
-  RearEdgeSensorAverageTimes8=0;
-  RightEdgeSensorAverageTimes8=0;  
+  EdgeArrayPos=0;
   LeftEdgeSensorAverage=0;
+  LeftEdgeSensorAverageTimes8=0;
   RightEdgeSensorAverage=0;
-  RearEdgeSensorAverage=0;  
-  #endif//end #ifdef RUNNING_AVERAGE
-  #ifdef TIME_ADJUSTED_AVERAGE
-  ReadEdgeLightSensors(1);
-  LeftEdgeSensorValuePrevious=LeftEdgeSensorValue;
-  RearEdgeSensorValuePrevious=RearEdgeSensorValue;
-  RightEdgeSensorValuePrevious=RightEdgeSensorValue;
-  LeftEdgeSensorAverageTimes32=LeftEdgeSensorValue<<5;
-  RearEdgeSensorAverageTimes32=RearEdgeSensorValue<<5;
-  RightEdgeSensorAverageTimes32=RightEdgeSensorValue<<5;
-  #endif
+  RightEdgeSensorAverageTimes8=0;
+  RearEdgeSensorAverage=0;
+  RearEdgeSensorAverageTimes8=0;
   LookAtEdgePrevTimeUs=micros();
   for(i=0;i<8;i++){
-    //LookAtEdge(); 
+    LookAtEdge(); 
   }
 }
 
 
 
-void LookAtEdge(void){//Ver. 1.2, Dustin Soodak
+void LookAtEdge(void){//Ver. 1.0, Dustin Soodak
   //note: ir remote control signals don't usually get into the edge sensors
-  uint32_t us;
-  #ifdef TIME_ADJUSTED_AVERAGE
-  float r1,r2;
-  LeftEdgeSensorValuePrevious=LeftEdgeSensorValue;
-  RearEdgeSensorValuePrevious=RearEdgeSensorValue;
-  RightEdgeSensorValuePrevious=RightEdgeSensorValue;
-  #endif
-  us=micros();
+  uint32_t us=micros();
   if(us-LookAtEdgePrevTimeUs<LIGHT_SENSOR_STABLIZATION_TIME){
     delayMicroseconds(LIGHT_SENSOR_STABLIZATION_TIME-(us-LookAtEdgePrevTimeUs));
   }    
-  
   //Serial.println(micros()-us);//remove!!!
-  SwitchAmbientToEdge();  
+  SwitchAmbientToEdge();
+  EdgeArrayPos=(EdgeArrayPos+1)&7;// pos=(pos+1) mod 8
+  LeftEdgeSensorAverageTimes8-=LeftEdgeArray[EdgeArrayPos];
+  RightEdgeSensorAverageTimes8-=RightEdgeArray[EdgeArrayPos];
+  RearEdgeSensorAverageTimes8-=RearEdgeArray[EdgeArrayPos];
   //Measure
   LeftEdgeSensorValue=ReadLeftLightSensor();
   RightEdgeSensorValue=ReadRightLightSensor();   
   RearEdgeSensorValue=ReadRearLightSensor(); 
   EdgeLightsOn();
   delayMicroseconds(LIGHT_SENSOR_STABLIZATION_TIME);  //originally 5us
-  LeftEdgeSensorValue=ReadLeftLightSensor()-LeftEdgeSensorValue-LEFT_ZERO;
-  RightEdgeSensorValue=ReadRightLightSensor()-RightEdgeSensorValue-RIGHT_ZERO;
-  RearEdgeSensorValue=ReadRearLightSensor()-RearEdgeSensorValue-REAR_ZERO;
-  EdgeLightsOff();  
-  LookAtEdgeTimeBetweenReadings=((float)us-LookAtEdgePrevTimeUs);
+  LeftEdgeSensorValue=ReadLeftLightSensor()-LeftEdgeSensorValue;
+  RightEdgeSensorValue=ReadRightLightSensor()-RightEdgeSensorValue;
+  RearEdgeSensorValue=ReadRearLightSensor()-RearEdgeSensorValue;
+  EdgeLightsOff();
   LookAtEdgePrevTimeUs=micros();
-  if(LookAtEdgeTimeBetweenReadings<(LIGHT_SENSOR_STABLIZATION_TIME))
-    LookAtEdgeTimeBetweenReadings=(LIGHT_SENSOR_STABLIZATION_TIME);
-  LookAtEdgeTimeBetweenReadings*=0.001;
   //Process data
   if(LeftEdgeSensorValue<0)//so can always use "/2" -> ">>1" trick so no divisions have to be done.
     LeftEdgeSensorValue=0;
@@ -284,11 +254,6 @@ void LookAtEdge(void){//Ver. 1.2, Dustin Soodak
   if(RearEdgeSensorValue<0){//so can always use "/2" -> ">>1" trick so no divisions have to be done.
     RearEdgeSensorValue=0; 
   }
-  #ifdef RUNNING_AVERAGE
-  EdgeArrayPos=(EdgeArrayPos+1)&7;// pos=(pos+1) mod 8
-  LeftEdgeSensorAverageTimes8-=LeftEdgeArray[EdgeArrayPos];
-  RightEdgeSensorAverageTimes8-=RightEdgeArray[EdgeArrayPos];
-  RearEdgeSensorAverageTimes8-=RearEdgeArray[EdgeArrayPos];
   LeftEdgeArray[EdgeArrayPos]=LeftEdgeSensorValue;
   RightEdgeArray[EdgeArrayPos]=RightEdgeSensorValue;
   RearEdgeArray[EdgeArrayPos]=RearEdgeSensorValue;
@@ -298,231 +263,171 @@ void LookAtEdge(void){//Ver. 1.2, Dustin Soodak
   LeftEdgeSensorAverage=LeftEdgeSensorAverageTimes8>>3;
   RightEdgeSensorAverage=RightEdgeSensorAverageTimes8>>3;
   RearEdgeSensorAverage=RearEdgeSensorAverageTimes8>>3;
-  #endif
-  #ifdef TIME_ADJUSTED_AVERAGE
-  //TimeAdjustedAverage=NewValue*(dt/totalT)+AverageValue*((totalT-dt)/totalT)
-  //                   =(1/totalT)*(NewValue*dt+AverageValue*(totalT-dt))
-  //                   dt=LookAtEdgeTimeBetweenReadings
-  //                   totalT=LookAtEdgeStabilizationTime
-  //                   AverageValue=, for example, LeftEdgeSensorAverage
-  //                   NewValue=, for example, LeftEdgeSensorValue
-  //                   generally make sure totalT/dt>=8 so average isn't changed too much by new value
-  //                   
-  r2=1/LookAtEdgeStabilizationTime;
-  r1=LookAtEdgeTimeBetweenReadings*r2;
-  if(r1>.125){
-    r1=.125;
-    r2=.875;
-  }
-  else
-    r2=(LookAtEdgeStabilizationTime-LookAtEdgeTimeBetweenReadings)*r2;
-  r1*=32;//since using "Times32" averages
-  LeftEdgeSensorAverageTimes32=LeftEdgeSensorValue*r1+LeftEdgeSensorAverageTimes32*r2;
-  RearEdgeSensorAverageTimes32=RearEdgeSensorValue*r1+RearEdgeSensorAverageTimes32*r2;
-  RightEdgeSensorAverageTimes32=RightEdgeSensorValue*r1+RightEdgeSensorAverageTimes32*r2;
-  LeftEdgeSensorAverage=LeftEdgeSensorAverageTimes32>>5;
-  RearEdgeSensorAverage=RearEdgeSensorAverageTimes32>>5;
-  RightEdgeSensorAverage=RightEdgeSensorAverageTimes32>>5;
-  #endif
- 
 }
-
-
-char IsOverEdge(void){//Ver 1.0, Dustin Soodak
-  char edge=0;
-  int Dark1,Dark2,Bright1,Bright2;
-  //Absolute endpoint tests:
-  #ifdef DARK_MIN
-  edge|=LeftEdgeSensorValue<DARK_MIN?LEFT_DARK:0;
-  edge|=RightEdgeSensorValue<DARK_MIN?RIGHT_DARK:0;
-  edge|=RearEdgeSensorValue<DARK_MIN?REAR_DARK:0;
-  if(edge!=0)
-    edge|=EXTRA_DARK;
-  #endif
-  #ifdef LIGHT_MAX
-  edge|=LeftEdgeSensorValue>LIGHT_MAX?LEFT_BRIGHT:0;
-  edge|=RearEdgeSensorValue>LIGHT_MAX?REAR_BRIGHT:0;
-  edge|=RightEdgeSensorValue>LIGHT_MAX?RIGHT_BRIGHT:0;
-  #endif  
-
-  //More sensitive tests:
-  #ifdef CHECK_EDGE_TWICE
-  if(!LeftDarkDetected(edge)){    
-    edge|=((LeftEdgeSensorValue<DarkEdgeMult2(LeftEdgeSensorAverage) && LeftEdgeSensorValuePrev()<DarkEdgeMult1(LeftEdgeSensorAverage))?LEFT_DARK:0);
-    if(!LeftDarkDetected(edge))
-      edge|=((LeftEdgeSensorValue>BrightEdgeMult2(LeftEdgeSensorAverage) && LeftEdgeSensorValuePrev()>BrightEdgeMult1(LeftEdgeSensorAverage))?LEFT_BRIGHT:0);
-  }
-  if(!RearDarkDetected(edge)){
-    edge|=((RearEdgeSensorValue<DarkEdgeMult2(RearEdgeSensorAverage) && RearEdgeSensorValuePrev()<DarkEdgeMult1(RearEdgeSensorAverage))?REAR_DARK:0);
-    if(!RearDarkDetected(edge))
-      edge|=((RearEdgeSensorValue>BrightEdgeMult2(RearEdgeSensorAverage) && RearEdgeSensorValuePrev()>BrightEdgeMult1(RearEdgeSensorAverage))?REAR_BRIGHT:0);
-  }
-  if(!RightDarkDetected(edge)){
-    edge|=((RightEdgeSensorValue<DarkEdgeMult2(RightEdgeSensorAverage) && RightEdgeSensorValuePrev()<DarkEdgeMult1(RightEdgeSensorAverage))?RIGHT_DARK:0);
-    if(!RightDarkDetected(edge))
-      edge|=((RightEdgeSensorValue>BrightEdgeMult2(RightEdgeSensorAverage) && RightEdgeSensorValuePrev()>BrightEdgeMult1(RightEdgeSensorAverage))?RIGHT_BRIGHT:0);
-  }
-  #endif //end check twice
-  #ifndef CHECK_EDGE_TWICE  
-  if(!LeftDarkDetected(edge)){
-    edge|=((LeftEdgeSensorValue<DarkEdgeMult1(LeftEdgeSensorAverage))?LEFT_DARK:0);
-    if(!LeftDarkDetected(edge))
-      edge|=((LeftEdgeSensorValue>BrightEdgeMult1(LeftEdgeSensorAverage))?LEFT_BRIGHT:0);
-  }
-  if(!RearDarkDetected(edge)){
-    edge|=((RearEdgeSensorValue<DarkEdgeMult1(RearEdgeSensorAverage))?REAR_DARK:0);
-    if(!RearDarkDetected(edge))
-      edge|=((RearEdgeSensorValue>BrightEdgeMult1(RearEdgeSensorAverage))?REAR_BRIGHT:0);
-  }
-  if(!RightDarkDetected(edge)){
-    edge|=((RightEdgeSensorValue<DarkEdgeMult1(RightEdgeSensorAverage)))?BRIGHT_DARK:0);
-    if(!RightDarkDetected(edge))
-      edge|=((RightEdgeSensorValue>BrightEdgeMult1(RightEdgeSensorAverage))?BRIGHT_BRIGHT:0);
-  }
-  #endif// end check once
-  return edge;
-}//end IsOverEdge
 
 
 // calls LookAtEdge(), and uses running average to detect edges or white tape.
 // Output bit num: 0: right dark edge (0x01)(0b000001)  1: right bright edge (0x02)(0b000010)   
 //                 2: rear dark edge (0x04)(0b000100)   3: rear bright edge (0x08)(0b001000)  
 //                 4: left dark edge (0x10)(0b010000)   5: left bright edge (0x20)(0b100000)
-char LookForEdge(void){//Ver. 1.1, Dustin Soodak
-  //Ver. 1.1:
-  LookAtEdge();
-  return IsOverEdge();
-  
+char LookForEdge(void){//Ver. 1.0, Dustin Soodak
+  //is an edge if a sensor's value drops below 7/8 of average, then below 6/8 of average on next reading
+  char Left=0,Right=0,Rear=0;
+  int LastLeftAver,LastRightAver,LastRearAver;
+  LookAtEdge();      
+  //look for edge
+  Left= (LeftEdgeSensorValue<DARK_MIN || LeftEdgeSensorValue<DarkEdgeMult1(LeftEdgeSensorAverage))?Left+1:0;
+  Right=(RightEdgeSensorValue<DARK_MIN || RightEdgeSensorValue<DarkEdgeMult1(RightEdgeSensorAverage))?Right+1:0;
+  Rear=(RearEdgeSensorValue<DARK_MIN_REAR || RearEdgeSensorValue<DarkEdgeMult1(RearEdgeSensorAverage))?Right+1:0;
+  if(Left || Right || Rear){  
+    #ifdef CHECK_EDGE_TWICE
+    //look for edge or black marker
+    LastLeftAver=LeftEdgeSensorAverage;
+    LastRightAver=RightEdgeSensorAverage; 
+    LastRearAver=RearEdgeSensorAverage;
+    //Serial.print(LeftEdgeSensorValue);Serial.print("\t");Serial.print(LeftEdgeSensorAverage);Serial.print("\t");
+    //Serial.print(RearEdgeSensorValue);Serial.print("\t");Serial.print(RearEdgeSensorAverage);Serial.print("\t");
+    //Serial.print(RightEdgeSensorValue);Serial.print("\t");Serial.print(RightEdgeSensorAverage);Serial.println("\t1");
+    LookAtEdge();
+    if(Left)
+      Left=(LeftEdgeSensorValue<DARK_MIN || LeftEdgeSensorValue<DarkEdgeMult2(LastLeftAver))?Left+1:0;
+    if(Right)
+      Right=(RightEdgeSensorValue<DARK_MIN || RightEdgeSensorValue<DarkEdgeMult2(LastRightAver))?Right+1:0;
+    if(Rear)
+      Rear=(RearEdgeSensorValue<DARK_MIN || RearEdgeSensorValue<DarkEdgeMult2(LastRearAver))?Rear+1:0;
+    //if(Left||Right||Rear){
+    //  Serial.print(LeftEdgeSensorValue);Serial.print("\t");Serial.print(LeftEdgeSensorAverage);Serial.print("\t");
+    //  Serial.print(RearEdgeSensorValue);Serial.print("\t");Serial.print(RearEdgeSensorAverage);Serial.print("\t");
+    //  Serial.print(RightEdgeSensorValue);Serial.print("\t");Serial.print(RightEdgeSensorAverage);Serial.println("\t2");
+    //}    
+    return (Left==2?0x10:0)|(Rear==2?0x04:0)|(Right==2?0x01:0);
+    #endif
+    #ifndef CHECK_EDGE_TWICE
+    return (Left?0x10:0)|(Rear?0x04:0)|(Right?0x01:0);
+    #endif
+  }//end looking for dark tape or edge of table
+  else{
+    //look for white tape
+    Left=(LeftEdgeSensorValue>LIGHT_MAX || LeftEdgeSensorValue>LightEdgeMult1(LeftEdgeSensorAverage))?Left+1:0;
+    Right=(RightEdgeSensorValue>LIGHT_MAX || RightEdgeSensorValue>LightEdgeMult1(RightEdgeSensorAverage))?Right+1:0; 
+    Rear=(RearEdgeSensorValue>LIGHT_MAX || RearEdgeSensorValue>LightEdgeMult1(RearEdgeSensorAverage))?Rear+1:0; 
+    #ifdef CHECK_EDGE_TWICE
+    if(Left || Right || Rear){   
+      LastLeftAver=LeftEdgeSensorAverage;
+      LastRightAver=RightEdgeSensorAverage; 
+      LastRearAver=RearEdgeSensorAverage; 
+      LookAtEdge();
+      if(Left)
+        Left=(LeftEdgeSensorValue>LIGHT_MAX || LeftEdgeSensorValue>LightEdgeMult2(LastLeftAver))?Left+1:0;
+      if(Right)
+        Right=(RightEdgeSensorValue>LIGHT_MAX || RightEdgeSensorValue>LightEdgeMult2(LastRightAver))?Right+1:0;
+      if(Rear)
+        Rear=(RearEdgeSensorValue>LIGHT_MAX || RearEdgeSensorValue>LightEdgeMult2(LastRearAver))?Rear+1:0;
+    }    
+    return (Left==2?0x20:0)|(Rear==2?0x08:0)|(Right==2?0x02:0);   
+    #endif
+    #ifndef CHECK_EDGE_TWICE
+    return (Left?0x20:0)|(Rear?0x08:0)|(Right?0x02:0); 
+    #endif
+  }//end looking for white tape
 }
 
 
-
-int RightLightLevel,LeftLightLevel,RearLightLevel;
-int RightLightLevelPrev,LeftLightLevelPrev,RearLightLevelPrev;
-float RightLightLevelAverage=0,LeftLightLevelAverage=0,RearLightLevelAverage=0;//float instead of int so enough precision for 
-                                                                               //the averaging algorithm to still work with 
-                                                                               //extra long stabilization times.
-int RearAmbientLightLevel,RightAmbientLightLevel,LeftAmbientLightLevel;
-uint32_t ReadSideSensorsPrevTimeUs=0;//note: in future, maybe make this static inside ReadSideSensors (unless we want
-                                     //      a "ResetReadSideSensors()" function).
-void ReadSideSensors(void){//Ver. 1.1, Dustin Soodak
-  uint32_t dt=micros()-ReadSideSensorsPrevTimeUs;
-  float a1,b1,a2,b2;
-  if(dt<LIGHT_SENSOR_STABLIZATION_TIME){
-    delayMicroseconds(LIGHT_SENSOR_STABLIZATION_TIME-dt);
-  }   
+void ReadSideSensors(void){//Ver. 1.0, Dustin Soodak
+  ReadSideSensors_Restart:
+  //check for IR receiving (to make sure it doesn't interfere with object detection)
+  //if(IRReceiving) Serial.print("_");
+  //while(IRReceiving){};
+  //
   digitalWrite(IR_Send,0);
   digitalWrite(IR_Enable_Front,1);
   digitalWrite(IR_Enable_RearLeft,1);
   digitalWrite(IR_Enable_RearRight,1);
   //ReadEdgeLightSensors();
-  LeftLightLevelPrev=LeftLightLevel;
-  RearLightLevelPrev=RearLightLevel;
-  RightLightLevelPrev=RightLightLevel;
   SwitchEdgeToAmbient();
   LeftAmbientLightLevel=ReadLeftLightSensor();
   RightAmbientLightLevel=ReadRightLightSensor();
   RearAmbientLightLevel=ReadRearLightSensor();
   digitalWrite(IR_Send,1); 
-  delayMicroseconds(LIGHT_SENSOR_STABLIZATION_TIME);
+  //PORTD|=(1<<7);
+  //DDRD|=(1<<7); 
+  /*if(PORTD&(1<<7)){
+        PORTD&=~(1<<7);
+        PORTD|=(1<<7);
+    }
+    else{
+        PORTD|=(1<<7);
+        PORTD&=~(1<<7);
+    }*/
+  delayMicroseconds(200);//delayMicroseconds(20);
   LeftLightLevel=ReadLeftLightSensor()-LeftAmbientLightLevel;
   RightLightLevel=ReadRightLightSensor()-RightAmbientLightLevel;
   RearLightLevel=ReadRightLightSensor()-RearAmbientLightLevel;
-  digitalWrite(IR_Send,0);
+  digitalWrite(IR_Send,0);  
+  //PORTD&=~(1<<7);
+  /*if(PORTD&(1<<7)){
+        PORTD&=~(1<<7);
+        PORTD|=(1<<7);
+    }
+    else{
+        PORTD|=(1<<7);
+        PORTD&=~(1<<7);
+    }*/
+  delayMicroseconds(20);//delayMicroseconds(20);
   if(LeftLightLevel<0) LeftLightLevel=0;
   if(RightLightLevel<0) RightLightLevel=0;  
   if(RearLightLevel<0) RearLightLevel=0;  
-  //  
-  //TimeAdjustedAverage=NewValue*(dt/totalT)+AverageValue*((totalT-dt)/totalT)
-  //totalT=SIDE_SENSOR_AVER_RISE_TIME us or SIDE_SENSOR_AVER_FALL_TIME us.
-  if(dt>SIDE_SENSOR_AVER_RISE_TIME){
-    a1=1;
-    b1=0;
-  }
-  else{
-    a1=((float)dt)/SIDE_SENSOR_AVER_RISE_TIME;
-    b1=((float)SIDE_SENSOR_AVER_RISE_TIME-dt)/SIDE_SENSOR_AVER_RISE_TIME;
-  }
-  if(dt>SIDE_SENSOR_AVER_FALL_TIME){
-    a2=1;
-    b2=0;
-  }
-  else{
-    a2=((float)dt)/SIDE_SENSOR_AVER_FALL_TIME;
-    b2=((float)SIDE_SENSOR_AVER_FALL_TIME-dt)/SIDE_SENSOR_AVER_FALL_TIME;
-  }
-  if(LeftLightLevel>LeftLightLevelAverage)
-    LeftLightLevelAverage=a1*LeftLightLevel+b1*LeftLightLevelAverage;
-  else
-    LeftLightLevelAverage=a2*LeftLightLevel+b2*LeftLightLevelAverage;
-  if(RightLightLevel>RightLightLevelAverage)
-    RightLightLevelAverage=a1*RightLightLevel+b1*RightLightLevelAverage;
-  else
-    RightLightLevelAverage=a2*RightLightLevel+b2*RightLightLevelAverage;
-  if(RearLightLevel>RearLightLevelAverage)
-    RearLightLevelAverage=a1*RearLightLevel+b1*RearLightLevelAverage;
-  else
-    RearLightLevelAverage=a2*RearLightLevel+b2*RearLightLevelAverage;
-  ReadSideSensorsPrevTimeUs=micros();
+  //
+  //Simple check for IR receiving (to make sure it doesn't interfere with object detection)
+  delayMicroseconds(100);
+  //if(IRReceiving){
+  //  Serial.print("!");
+  //  goto ReadSideSensors_Restart;
+  //}
 }
-//Some test code for ReadSideSensors():
-//HardwareBegin();
-//RestartTimer();
-//while(!ButtonPressed()){
-//  if(GetTime()>200){
-//    ReadSideSensors();
-//    //Try printing something like this:
-//    Serial.print(LeftLightLevel,DEC);Serial.print(" ");Serial.print(RightLightLevel,DEC);Serial.print(" Amb: ");
-//    Serial.print(LeftAmbientLightLevel,DEC);Serial.print(" ");Serial.print(RightAmbientLightLevel,DEC);
-//    //or this (if these values > 50, it usually means a barrier is coming up):
-//    //Serial.print(LeftLightLevel-LeftLightLevelAverage,DEC);Serial.print(" ");Serial.print(RightLightLevel-RightLightLevelAverage,DEC);
-//    Serial.println();
-//    RestartTimer();
-//  }
-//}
+  
 
-void TxIR(unsigned char *Data, int Length){//Ver. 1.2, Dustin Soodak
+
+void ModulateIR(char Level){//Ver. 1.0, Dustin Soodak
+  if(Level){
+    digitalWrite(IR_Enable_Front,1);
+    digitalWrite(IR_Enable_RearLeft,1);
+    digitalWrite(IR_Enable_RearRight,1);
+  }
+  else{
+    digitalWrite(IR_Enable_Front,0);
+    digitalWrite(IR_Enable_RearLeft,0);
+    digitalWrite(IR_Enable_RearRight,0);
+  }
+}
+
+void TxIR(unsigned char *Data, int Length){//Ver. 1.0, Dustin Soodak
     int i;
     char j;
     const uint16_t Freq=38000,UsOn=5; //For R2=2k pull up, 8 us delay before pin falls. Inputs (28000,5) give a decent square wave in this case. 
     RxIRStop();
-    EnableIROutputs(1);
+    ModulateIR(1);
     ModulateIR(Freq,UsOn);
     delayMicroseconds(9000);
-    EnableIROutputs(0);               //EnableIROutputs(0) turns off IR 38khz out but this makes receiver voltage go high.
+    ModulateIR(0);//note: ModulateIR(0) turns off IR 38khz out but this makes receiver voltage go high.
     delayMicroseconds(4500);
-    EnableIROutputs(1);
-    delayMicroseconds(520);
+    ModulateIR(1);
+    delayMicroseconds(600);
     for(i=0;i<Length;i++){      
       for(j=0;j<8;j++){
-        EnableIROutputs(0);
+        ModulateIR(0);
         if((Data[i])&(1<<j))
-          delayMicroseconds(1610);
+          delayMicroseconds(1600);
         else
-          delayMicroseconds(580);
-        EnableIROutputs(1);
-        delayMicroseconds(520);
+          delayMicroseconds(525);
+        ModulateIR(1);
+        delayMicroseconds(600);
       }      
     }//end for(i=0;i<Length;i++)    
+    ModulateIR(0);
     ModulateIR(38000, 0);
-    EnableIROutputs(1); 
 }//end TxIR()
 
-void TxIRKey(byte key){//Ver. 1.0, Kevin King
-  if(key<1){
-    // do nothing
-  }
-  else if(key>21){
-    // do nothing
-  }
-  else{     // actually send IR key if it was within correct range
-  key-=1;   //subract 1 from key number so it matches array IRRemoteButtons
-  irData[0]=0x00;irData[1]=0xFF;     // all remote keys begin with 0x00, 0xFF
-  irData[2]=IRRemoteButtons[key][0]; // add 3rd value
-  irData[3]=IRRemoteButtons[key][1]; // add 4th value
-  TxIR(irData,4);                    // actually transmit via any enabled IR sources
-  }
-}//end TxIRKey()
 
 int IRTransitionCount=0;
 char IRBitNum=0,IRByte=0,IRNumOfBytes=0;
@@ -532,8 +437,6 @@ uint32_t MsAtLastIR=0;//used for end of communication timeout
 volatile char IRReceiving=0;
 char IRActive=0;
 char IRMaxByteCount=4;
-
-
 void RxIRRestart(char BytesToLookFor){//Ver. 1.0, Dustin Soodak
   int i;
   detachInterrupt(1);//interrupt 1 is I/O 3 which is _38kHz_R
@@ -574,7 +477,7 @@ void IRHandler(void){//Ver. 1.0, Dustin Soodak
   char Level;
   noInterrupts();
   IRTime=TCNT1;
-  delayMicroseconds(5);//debounce (don't know if mecessary) 
+  //delayMicroseconds(5);//debounce (don't know if mecessary) 
   interrupts(); 
   Level=digitalRead(_38kHz_Rx);  
   /*
@@ -694,16 +597,14 @@ void SetPixelRGB(int Pixel, int Red, int Green, int Blue){//Ver. 1.0, Dustin Soo
   if(Pixel<0)
     Pixel=0;
   pixels.setPixelColor(Pixel, pixels.Color(Red,Green,Blue));
-  pixels.show();//Remove this line and use RefreshPixels() below 
-  //              if you want to set several at once for high-speed patterns.
+  pixels.show();
 }
-void SetAllPixelsRGB(int Red, int Green, int Blue){//Ver. 1.1, Dustin Soodak
-  SwitchButtonToPixels();
+void SetAllPixelsRGB(int Red, int Green, int Blue){//Ver. 1.0, Dustin Soodak
   char i;
   for(i=0;i<NUM_PIXELS;i++){
     pixels.setPixelColor(i, pixels.Color(Red,Green,Blue)); 
   }
-  pixels.show();//added Ver.1.1
+  pixels.show();   
 }
 void RefreshPixels(void){//Ver. 1.0, Dustin Soodak
   pixels.show();  
@@ -717,110 +618,11 @@ void RefreshPixels(void){//Ver. 1.0, Dustin Soodak
 // MovementFunctions
 // ***************************************************
 
-//
-//MaintainHeading:
-//
-//This is a simplified PID (proportiona-Integral-Derivative) function for
-//maintaining your present heading. A complete example can be found below
-//the MaintainHeading(degrees,speed,wiggle) function.
-//
-int MaintTainHeadingOffsetDir=1;
-int MaintainHeadingIntegral=0;
-uint32_t MaintainHeadingPrevTimeUs;
 
-void MaintainHeadingReset(){//Ver. 1.0, Dustin Soodak
-  MaintainHeadingIntegral=0;
-  MaintainHeadingPrevTimeUs=micros();
-}
-
-char MaintainHeading(int Heading, int Speed, int Wiggle){//Ver. 1.0, Dustin Soodak
-  int Input,Output,Proportional,left,right;
-  char ret=0;
-  float dt;
-  if(Wiggle>0){
-    if(MaintTainHeadingOffsetDir>0){
-      if(GetDegrees()>=Heading+Wiggle)
-        MaintTainHeadingOffsetDir=-1;    
-    }
-    else{
-      if(GetDegrees()<=Heading-Wiggle)
-        MaintTainHeadingOffsetDir=1;
-    }
-  }  
-  Input=GetDegrees()+GetDegreesToStop();
-  Proportional=(Heading+MaintTainHeadingOffsetDir*Wiggle-Input);//make it try to turn to the wiggle value
-  //Note: "MaintainHeadingAverageDerivative" no longer needs to be needed. Code left here in case necessary for modded bot.
-  //TimeAdjustedAverage=NewValue*(dt/totalT)+AverageValue*((totalT-dt)/totalT)
-  //In this case, we are doing a 1/10th second (100000us) time average.
-  //if(dt>100000)
-  //  MaintainHeadingAverageDerivative=GetDegreesPerSecond();
-  //else
-  //  MaintainHeadingAverageDerivative=(((float)dt)*.00001)*GetDegreesPerSecond()+((100000-(float)dt)*.00001)*MaintainHeadingAverageDerivative;
-  dt=micros()-MaintainHeadingPrevTimeUs;
-  MaintainHeadingPrevTimeUs=MaintainHeadingPrevTimeUs+dt;
-  if(dt>100000)
-    dt=100000;  
-    MaintainHeadingIntegral+=(((float)dt)*.0001)*Proportional;
-  if(MaintainHeadingIntegral>20*MAINTAIN_HEADING_MAX_INTEGRAL_TERM)
-    MaintainHeadingIntegral=20*MAINTAIN_HEADING_MAX_INTEGRAL_TERM;
-  if(MaintainHeadingIntegral<-20*MAINTAIN_HEADING_MAX_INTEGRAL_TERM)
-    MaintainHeadingIntegral=-20*MAINTAIN_HEADING_MAX_INTEGRAL_TERM;   
-  Output=Proportional+MaintainHeadingIntegral/20;
-  //Use this version in case MaintainHeadingAverageDerivative has to brought back:
-  //Output=Proportional+MaintainHeadingIntegral/20-(Wiggle==0?1*MaintainHeadingAverageDerivative/4:0*MaintainHeadingAverageDerivative/4);
-  if(Output>150)
-    Output=150;
-  if(Output<-150)
-    Output=-150;
-  left=Speed+Output;
-  right=Speed-Output;
-  //Note: only include this section if you know what your robots min motor speed is (below which it doesn't move at all):
-  if(abs(left)<MIN_MOTOR_SPEED){
-    left=(left>0?MIN_MOTOR_SPEED:left<0?-MIN_MOTOR_SPEED:0);
-  }
-  if(abs(right)<MIN_MOTOR_SPEED){
-    right=(right>0?MIN_MOTOR_SPEED:right<0?-MIN_MOTOR_SPEED:0);
-  }
-  Motors(left,right);
-  //a debug/test section:
-  /*RecordedDataRow.Prop=Proportional;
-  RecordedDataRow.Int=MaintainHeadingIntegral;
-  RecordedDataRow.Der=MaintainHeadingAverageDerivative;
-  RecordedDataRefresh();*/
-  return ret;
-}
-//A complete example: (CTRL-/ to un-comment)
-//#include "RingoHardware.h"
-//int Heading;
-//int Speed=100;
-//int Wiggle=0;
-//void setup(){
-//  HardwareBegin();
-//  PlayStartChirp(); 
-//  while(!ButtonPressed());
-//  delay(1000);
-//  NavigationBegin();
-//  ResumeNavigation();
-//  Heading=PresentHeading();
-//  MaintainHeadingReset();
-//}
-//void loop(){
-//  SimpleGyroNavigation();//or SimpleNavigation(), or NavigationXY()
-//  MaintainHeading(Heading,Speed,Wiggle);
-//  if(PresentHeading()>Heading)
-//    SetPixelRGB(BODY_TOP,0,0,10);
-//  else if(PresentHeading()==Heading)
-//    SetPixelRGB(BODY_TOP,0,10,0);
-//  else
-//    SetPixelRGB(BODY_TOP,10,0,0);
-//}
-
-
-
-
-void DriveArc(int TurnDegrees, int left, int right, int MaxExpectedTurnTime, int MaxExpectedSkidTime){//Ver. 1.0, Dustin Soodak
+void RotateSimple(int TurnDegrees, int left, int right, int MaxExpectedTurnTime, int MaxExpectedSkidTime){//Ver. 1.0, Dustin Soodak
   uint32_t timeout;
   int degr,DegrPredict,DegrInit;
+  char colormode=0;
   SwitchSerialToMotors();
   if(NavigationOn){
     CalibrateNavigationSensors();
@@ -878,6 +680,7 @@ char RotateAccurate(int Heading, int MaxExpectedTurnTime){//Ver. 1.0, Dustin Soo
     degrprev=degr;
     skid=GetDegreesToStop();    
     if(abs(degr)<=1){
+      SetPixelRGB(0,10,0,0);RefreshPixels();
       Motors(0,0);
       if(GetDegreesPerSecond()==0){        
         timeout=millis()+50;
@@ -892,7 +695,7 @@ char RotateAccurate(int Heading, int MaxExpectedTurnTime){//Ver. 1.0, Dustin Soo
       }
     }
     else{
-      motor=MIN_MOTOR_SPEED+abs(degr+skid);
+      motor=50+abs(degr+skid);
       if(motor>200)
         motor=200;      
       if(degr+skid>0)
@@ -918,7 +721,7 @@ void MoveWithOptions(int Heading, int Distance, int Speed, int MaxExpectedRunTim
   
   uint32_t timeout;
   int xrelative,yrelative,xrelativeinit,yrelativeinit,X,Y;
-  int Input,Output,Proportional,Integral=0,Derivative;
+  int Input,Output,Proportional,Integral=0,Derivative,ProportionalPrev;
   int MinLeftEdge,MinRightEdge;
   char left,right,edge;
   signed char BackAway=0;
@@ -948,6 +751,7 @@ void MoveWithOptions(int Heading, int Distance, int Speed, int MaxExpectedRunTim
   Motors(Speed,Speed);
   timeout=millis()+MaxExpectedRunTime;
   Input=GetDegrees()+GetDegreesToStop();
+  ProportionalPrev=(Heading-Input);
  
   RestartTimer();
   while(millis()<timeout){
@@ -960,11 +764,6 @@ void MoveWithOptions(int Heading, int Distance, int Speed, int MaxExpectedRunTim
       xrelativeinit=xrelative;//finish line is in new direction
       yrelativeinit=yrelative;
     }
-
-    MaintainHeading(Heading,Speed,Wiggle);
-
-    
-    /*
     if(OffsetDir>0){
       if(GetDegrees()>Heading+Wiggle)
         OffsetDir=-1;    
@@ -973,9 +772,11 @@ void MoveWithOptions(int Heading, int Distance, int Speed, int MaxExpectedRunTim
       if(GetDegrees()<Heading-Wiggle)
         OffsetDir=1;
     }
+    
     Input=GetDegrees()+GetDegreesToStop();
     Proportional=(Heading+OffsetDir*Wiggle-Input);//make it try to turn to the wiggle value
     Derivative=GetDegreesPerSecond();
+    ProportionalPrev=Proportional;
     Integral+=Proportional;
     if(Integral/20>100)
       Integral=20*100;
@@ -987,7 +788,7 @@ void MoveWithOptions(int Heading, int Distance, int Speed, int MaxExpectedRunTim
     if(Output<-100)
       Output=-100; 
     Motors(Speed+Output,Speed-Output);  
-    */
+    
     //If dot product of initial and current relative positions is negative, then their orientations differ by more than 90 degrees.
     //This is how we determine if we have passed the imaginary "finish line".
     if(((int32_t)xrelative)*xrelativeinit+((int32_t)yrelative)*yrelativeinit<0){
@@ -1066,19 +867,6 @@ void StopTimer(void){//Ver. 1.0, Dustin Soodak
 // IR Data Sending
 // ***************************************************
 
-void EnableIROutputs(char Level){//Ver. 1.0, Dustin Soodak
-  if(Level){
-    digitalWrite(IR_Enable_Front,1);
-    digitalWrite(IR_Enable_RearLeft,1);
-    digitalWrite(IR_Enable_RearRight,1);
-  }
-  else{
-    digitalWrite(IR_Enable_Front,0);
-    digitalWrite(IR_Enable_RearLeft,0);
-    digitalWrite(IR_Enable_RearRight,0);
-  }
-}
-
 void ModulateIR(unsigned int Frequency, unsigned int OnTime){//Ver. 1.0, Dustin Soodak 
   //ModulateIR(38000,6) seems to produce best square wave for 38kHz.
   //Frequency is in Hz
@@ -1088,7 +876,7 @@ void ModulateIR(unsigned int Frequency, unsigned int OnTime){//Ver. 1.0, Dustin 
   uint8_t prescalerbits;
   if(OnTime>100)
     OnTime=100;
-  if (F_CPU/Frequency/2 >= 0x10000){
+  if (F_CPU/Frequency/2>=0x10000){
     if(F_CPU/Frequency/2>=0x10000*8){
         prescalerbits=0b011;//prescaler 64
         period=F_CPU/Frequency/(2*16);
@@ -1121,24 +909,10 @@ void ModulateIR(unsigned int Frequency, unsigned int OnTime){//Ver. 1.0, Dustin 
   }
 }
 
+
 void PlayChirpIR(unsigned int Frequency, unsigned int OnTime){//Ver. 1.0, Dustin Soodak
   // ModulateIR used to be called PlayChirpIR, left in for backward compatibility.
    ModulateIR(Frequency,OnTime); 
-}
-
-char CheckMenuButton(void){
-  byte button;
-  if(IsIRDone()){              //wait for an IR remote control command to be received
-      button = GetIRButton();  // read which button was pressed, store in "button" variable
-      RxIRRestart(4);          // restart looking for another buttom press
-      if(button == 17){         // button 17 is the "MENU" button on the IR remote
-      return 1;
-      }
-      else{
-      return 0;  
-      }
-  }
-  return 0;
 }
 
 // ***************************************************
@@ -1152,7 +926,7 @@ char CheckMenuButton(void){
 
   //Ver. 1.0, Dustin Soodak
   //Global variables:
-  RecordedDataStruct RecordedDataRow;
+  RecordedDataStruct Data;
   RecordedDataStruct RecordedDataArray[RECORDED_DATA_ARRAY_LENGTH];
   unsigned char RecordedDataLength=0;
   unsigned char RecordedDataPosition=0;
@@ -1160,8 +934,12 @@ char CheckMenuButton(void){
   uint32_t RecordedDataStart,RecordedDataPrev;
   uint16_t RecordedDataMinDelay;
       
-  //RecordedDataRow.ms=RecordedDataTime()/1000;RecordedDataRow.degr=GetDegrees();RecordedDataRefresh();
+  //Data.ms=RecordedDataTime()/1000;Data.degr=GetDegrees();RecordedDataRefresh();
   
 // ***************************************************
 // end Recorded Data
 // ***************************************************
+
+
+
+

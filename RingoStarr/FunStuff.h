@@ -30,7 +30,6 @@ Visit http://www.arduino.cc to learn about the Arduino.
 
 extern void PlayStartChirp(void); //put in begin() to indicate that unit has restarted.
 extern void PlayAck(void);        //simple acknowledgement chirp. flashes middle pixel green.
-extern void PlayNonAck(void);     //simple non-acknowledgement chirp. flashes middle pixel red.
 extern void PlayAnger(void);
 extern void PlayBoredom(void);
 extern void PlayExcited(void);
@@ -57,8 +56,6 @@ extern void OnEyes(byte Red, byte Green, byte Blue);         //makes eyes the gi
 extern void LeftEye(byte Red, byte Green, byte Blue);        //sets left eye to given color, automatically calls RefreshPixels()
 extern void RightEye(byte Red, byte Green, byte Blue);       //sets left eye to given color, automatically calls RefreshPixels()
 extern void OffEyes(void);                                   //turns off eye lights
-extern void RandomEyes(void);                                //Sets the pair of eyes to a random color
-
 
 // ***************************************************
 // end Chirp, Sound, Piezo, Lighting Functions

@@ -1,14 +1,13 @@
 /*
 
-Ringo Robot:  Animation  Rev01.02  12/2015
+Ringo Robot:  Animation  Rev01.01  08/2015
 
 This code includes various "animation" things Ringo can do. For example, sounds,
 lighting sequences, dance moves, etc. Users are encouraged to build their own
 "animations" and share their work on the forum.  http://forum.plumgeek.com/
 
-Significant portions of this code written by
-Dustin Soodak for Plum Geek LLC. Some portions
-contributed by Kevin King.
+This code was written by Plum Geek LLC by
+Dustin Soodak and Kevin King.
 Portions from other open source projects where noted.
 This code is licensed under:
 Creative Commons Attribution-ShareAlike 2.0 Generic (CC BY-SA 2.0)
@@ -45,17 +44,9 @@ void PlayStartChirp(void){//Ver. 1.0, Kevin King
 
 void PlayAck(void){//Ver. 1.0, Kevin King
   PlayChirp(NOTE_C7,100);
+//  SwitchButtonToPixels();
   SetPixelRGB(BODY_TOP,0,30,0);//RefreshPixels();
   delay(50);
-  OffChirp();
-  SetPixelRGB(BODY_TOP,0,0,0);//RefreshPixels();
-}
-
-
-void PlayNonAck(void){//Ver. 1.0, Kevin King
-  PlayChirp(NOTE_CS6,100);
-  SetPixelRGB(BODY_TOP,30,0,0);//RefreshPixels();
-  delay(75);
   OffChirp();
   SetPixelRGB(BODY_TOP,0,0,0);//RefreshPixels();
 }
@@ -209,13 +200,6 @@ void OffEyes(void){//Ver. 1.0, Kevin King                //turns off eye pixels
   SetPixelRGB(5,0,0,0);                                  //blank left eye
 }
 
-void RandomEyes(void){//Ver. 1.0, Kevin King             //Sets the pair of eyes to a random color
-  int red, green, blue;
-  red = random(120);
-  green = random(120);
-  blue = random(120);
-  OnEyes(red,green,blue);
-}
 
 // ***************************************************
 // end Chirp, Sound, Piezo Core Functions
