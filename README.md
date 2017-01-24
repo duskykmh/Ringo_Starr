@@ -6,7 +6,7 @@ This a collaborative project designed by Jacob Brown, Max Dickinson, Kyle Holmbe
 
 <u>System requires:</u>
 <li>Plumgeek Ringo Robot</li>
-<li>Arduino Uno Board</li>
+<li>Arduino-compatible <a href="https://software.intel.com/en-us/iot/hardware/edison">Intel Edison</a></li>
 <li>Breadboard</li>
 <li>IR Transmitter Module</li>
 <li>Microphone Module</li>
